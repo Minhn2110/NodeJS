@@ -1,52 +1,28 @@
 const express = require('express');
-const fs = require('fs');
-const morgan = require('morgan')
+const morgan = require('morgan');
+
+const tourRouter = require('./routes/tourRoute.js');
+const userRouter = require('./routes/userRoute.js');
+
 const app = express();
-const port = 4000;
+
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Midleware
 
 app.use(express.json());
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
   next(); // To call next funciton
 });
-app.use(morgan('dev'))
+app.use(morgan('dev'));
+app.use(express.static(`${__dirname}/public`));
 
-const tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`)
-);
+// Router
 
-const getTours = (req, res) => {
-  res.status(200).json({
-    status: 'success',
-    results: tours.length,
-    req: req.requestTime,
-    data: {
-      tours,
-    },
-  });
-};
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/users', userRouter);
 
-const getTour = (req, res) => {
-  const tour = tours.find((el) => el.id === +req.params.id);
-  console.log('tour', tour);
-  res.status(200).json({
-    status: 'success',
-    results: tours.length,
-    data: {
-      tour,
-    },
-  });
-};
-const createTour = (req, res) => {
-  console.log('🚀 ~ app.post ~ req', req.body);
-  res.send('POST request to the homepagee');
-};
-
-// app.get('/api/v1/tours', getTours);
-app.get('/api/v1/tours/:id', getTour);
-// app.post('/api/v1/tours', createTour);
-
-app.route('/api/v1/tours').get(getTours).post(createTour);
-app.route('/api/v1/tours/:id').get(getTour);
-
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+module.exports = app;
